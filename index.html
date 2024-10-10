@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Movie Search</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+
+            .movie {
+                display: flex;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            .movie img {
+                width: 100px;
+                margin-right: 20px;
+            }
+
+            .movie-details {
+                flex-grow: 1;
+            }
+
+            .cta {
+                background-color: #007BFF;
+                color: white;
+                border: none;
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .cta:hover {
+                background-color: #0056b3;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <h1>Search for a Movie</h1>
+        <form id="movieForm">
+            <input type="text" id="movieInput" placeholder="Enter movie name" required />
+            <button type="submit">Search</button>
+        </form>
+
+        <div id="movieList"></div>
+
+        <script>
+            const API_KEY = 'yourAPIKey'; // Remplacez par votre clé API OMDb
+            const movieForm = document.getElementById('movieForm');
+            const movieList = document.getElementById('movieList');
+            let page = 1;
+
+            async function fetchMovies(query, page = 1) {
+                const response = await fetch(`https://www.omdbapi.com/?s=${query}&page=${page}&apikey=55ae8a79`);
+                const data = await response.json();
+
+                if (data.Response === "False") {
+                    console.error(data.Error);
+                    return [];  // Renvoie un tableau vide si l'API ne trouve rien
+                }
+
+                return data.Search;
+            }
+
+            function displayMovies(movies) {
+                if (!movies || movies.length === 0) {
+                    movieList.innerHTML = '<p>No movies found.</p>';
+                    return;
+                }
+
+                movies.forEach(movie => {
+                    if (!movie.imdbID) {
+                        console.error('Incorrect IMDb ID for movie:', movie);
+                        return; // Sauter ce film s'il a un IMDb ID incorrect
+                    }
+
+                    const movieElement = document.createElement('div');
+                    movieElement.classList.add('movie');
+                    movieElement.innerHTML = `
+                <img src="${movie.Poster !== "N/A" ? movie.Poster : 'placeholder.jpg'}" alt="${movie.Title}" />
+                <div class="movie-details">
+                    <h2>${movie.Title}</h2>
+                    <p>Release Year: ${movie.Year}</p>
+                    <button class="cta" data-id="${movie.imdbID}">Read more</button>
+                </div>
+            `;
+                    movieList.appendChild(movieElement);
+                });
+            }
+
+            // Submit form and fetch movies
+            movieForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                movieList.innerHTML = ''; // Clear previous results
+                const query = document.getElementById('movieInput').value;
+                const movies = await fetchMovies(query);
+                displayMovies(movies);
+            });
+
+            // Infinite scroll with Intersection Observer
+            const observer = new IntersectionObserver(async entries => {
+                if (entries[0].isIntersecting) {
+                    page++;
+                    const query = document.getElementById('movieInput').value;
+                    const movies = await fetchMovies(query, page);
+                    displayMovies(movies);
+                }
+            }, { threshold: 0.5 });
+
+            observer.observe(document.querySelector('footer')); // Assuming footer is at the bottom
+        </script>
+
+        <footer id="footer"></footer>
+
+        <script>
+            const footer = document.getElementById('footer');
+
+            // Vérification de l'existence de l'élément footer
+            if (footer) {
+                const observer = new IntersectionObserver(entries => {
+                    if (entries[0].isIntersecting) {
+                        // Charger plus de films
+                    }
+                });
+                observer.observe(footer);
+            } else {
+                console.error('Footer element not found.');
+            }
+        </script>
+
+    </body>
+
+</html>
